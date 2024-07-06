@@ -1,0 +1,8 @@
+Flask
+flask_sqlalchemy
+flask_migrate
+SQLAlchemy
+psycopg2-binary
+pandas
+gunicorn
+Werkzeug
