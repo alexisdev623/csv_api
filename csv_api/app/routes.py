@@ -2,54 +2,85 @@
 from flask import Blueprint, request, jsonify
 from .models import db, Department, Job, Employee
 import pandas as pd
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy import text
 
-bp = Blueprint('routes', __name__)
 
-@bp.route('/upload_csv', methods=['POST'])
+bp = Blueprint("routes", __name__)
+
+
+@bp.route("/upload_csv", methods=["POST"])
 def upload_csv():
     print("request: ", request)
-    file_value = request.args.get('file')
+    file_value = request.args.get("file")
     print("file value: ", file_value)
-    if 'departments' in file_value:    
-        df = pd.read_csv(f"csv_files/{file_value}.csv", delimiter=",", names=["id", "title"])
-        df.loc[len(df)] = [-1, 'not known']
+    if "departments" in file_value:
+        df = pd.read_csv(
+            f"csv_files/{file_value}.csv", delimiter=",", names=["id", "title"]
+        )
+        df.loc[len(df)] = [-1, "not known"]
         print("Loading rows: ", df.shape)
         for _, row in df.iterrows():
-            department = Department(name=row['title'])
+            department = Department(name=row["title"])
             db.session.add(department)
-    elif 'jobs' in file_value:
-        df = pd.read_csv(f"csv_files/{file_value}.csv", delimiter=",", names=["id", "title"])
-        df.loc[len(df)] = [-1, 'not known']
+    elif "jobs" in file_value:
+        df = pd.read_csv(
+            f"csv_files/{file_value}.csv", delimiter=",", names=["id", "title"]
+        )
+        df.loc[len(df)] = [-1, "not known"]
         print("Loading rows: ", df.shape)
         for _, row in df.iterrows():
-            job = Job(title=row['title'])
+            job = Job(title=row["title"])
             db.session.add(job)
-    elif 'employees' in file_value:
-        df = pd.read_csv(f"csv_files/{file_value}.csv", delimiter=",", names=["name", "hire_date", "department_id", "job_id"])
-        deparment_query = Department.query.filter_by(name='not known').all()
-        job_query = Job.query.filter_by(title='not known').all()
-        nulls_deparment_id = deparment_query[0].id
-        nulls_job_id = job_query[0].id
+    elif "employees" in file_value:
+        df = pd.read_csv(
+            f"csv_files/{file_value}.csv",
+            delimiter=",",
+            names=["name", "hire_date", "department_id", "job_id"],
+        )
+        try:
+            deparment_query = Department.query.filter_by(name="not known").all()
+            job_query = Job.query.filter_by(title="not known").all()
+            nulls_deparment_id = deparment_query[0].id
+            nulls_job_id = job_query[0].id
+        except IndexError:
+            default_null_value = -1
+            print(
+                f"No hay registrados nulos en deparment_id y en job_id, se asume: {default_null_value}"
+            )
+            nulls_deparment_id = default_null_value
+            nulls_job_id = default_null_value
 
-        df['job_id'] = df['job_id'].fillna(nulls_job_id).astype(int) 
-        df['department_id'] = df['department_id'].fillna(nulls_deparment_id).astype(int) 
-        df['hire_date'] = pd.to_datetime(df['hire_date'].fillna(pd.Timestamp('1970-01-01')))    
-        df['name'] = df['name'].astype(str) 
+        df["job_id"] = df["job_id"].fillna(nulls_job_id).astype(int)
+        df["department_id"] = df["department_id"].fillna(nulls_deparment_id).astype(int)
+        df["hire_date"] = pd.to_datetime(
+            df["hire_date"].fillna(pd.Timestamp("1970-01-01"))
+        )
+        df["name"] = df["name"].astype(str)
         print("Loading rows: ", df.shape)
-        for _, row in df.iterrows():        
-            employee = Employee(name=row['name'], job_id=row['job_id'], department_id=row['department_id'], hire_date=row['hire_date'])
+        for _, row in df.iterrows():
+            employee = Employee(
+                name=row["name"],
+                job_id=row["job_id"],
+                department_id=row["department_id"],
+                hire_date=row["hire_date"],
+            )
             db.session.add(employee)
+
     try:
         db.session.commit()
         return jsonify({"message": "File uploaded successfully"}), 200
     except IntegrityError as e:
         db.session.rollback()
-        return jsonify({"error": f"Duplicate key value violates unique constraint with {e}"}), 400        
-    
+        return (
+            jsonify(
+                {"error": f"Duplicate key value violates unique constraint with {e}"}
+            ),
+            400,
+        )
 
-@bp.route('/generate_report1', methods=['POST'])
+
+@bp.route("/generate_report1", methods=["POST"])
 def generate_report1():
     print("Generating report")
     sql_query = """
@@ -90,24 +121,31 @@ def generate_report1():
     ORDER BY dn.department_name, jn.job_name;
     """
 
-    result = db.session.execute(text(sql_query))
-    print("Generating result", result)
-    report_data = []
-    for row in result:
-        print("row : ", row)
-        report_data.append({
-            'department': row[0],
-            'job': row[1],
-            'Q1': row[2],
-            'Q2': row[3],
-            'Q3': row[4],
-            'Q4': row[5]
-        })
+    try:
+        result = db.session.execute(text(sql_query))
+        print("Generating result", result)
+        report_data = []
+        for row in result:
+            print("row : ", row)
+            report_data.append(
+                {
+                    "department": row[0],
+                    "job": row[1],
+                    "Q1": row[2],
+                    "Q2": row[3],
+                    "Q3": row[4],
+                    "Q4": row[5],
+                }
+            )
 
-    return jsonify(report_data), 200
+        return jsonify(report_data), 200
+    except OperationalError as e:
+        db.session.rollback()
+        print("Error conecting to sqlite", e)
+        return jsonify({"error": f"Database operation error: {str(e)}"}), 200
 
 
-@bp.route('/generate_report2', methods=['POST'])
+@bp.route("/generate_report2", methods=["POST"])
 def generate_report2():
     print("Generating report")
     sql_query = """
@@ -131,17 +169,15 @@ def generate_report2():
     where mean_hires_by_dept < hired
     ;
     """
-
-    result = db.session.execute(text(sql_query))
-    print("Generating result", result)
-    report_data = []
-    for row in result:
-        print("row : ", row)
-        report_data.append({
-            'id': row[0],
-            'deparment': row[1],
-            'hired': row[2]
-        })
-
-    return jsonify(report_data), 200
-
+    try:
+        result = db.session.execute(text(sql_query))
+        print("Generating result", result)
+        report_data = []
+        for row in result:
+            print("row : ", row)
+            report_data.append({"id": row[0], "deparment": row[1], "hired": row[2]})
+        return jsonify(report_data), 200
+    except OperationalError as e:
+        db.session.rollback()
+        print("Error conecting to sqlite", e)
+        return jsonify({"error": f"Database operation error: {str(e)}"}), 200

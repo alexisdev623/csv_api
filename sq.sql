@@ -19,5 +19,4 @@ drop table alembic_version CASCADE;
 
 
 ! hacer segundo punto
-!puedo desplegar esta imagen en 
-
+!puedo desplegar esta imagen en
