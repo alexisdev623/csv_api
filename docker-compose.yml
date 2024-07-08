@@ -11,7 +11,9 @@ services:
     environment:
       FLASK_APP: run.py
       FLASK_ENV: development
-      DATABASE_URL: postgres://postgres:1234@db:5432/employee
+      DATABASE_URL: postgresql://postgres:1234@localdb/employee
+      S3_BUCKET: csv-api-employee-db
+      LOCAL_CSV_PATH: csv_files
     networks :
       - csv_netw
 
