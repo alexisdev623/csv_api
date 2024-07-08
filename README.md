@@ -17,36 +17,39 @@ Tener docker y docker-compose instalados en el computador
 ## Instalación
 Clonar el repositorio:
 
-bash
+```
 Copiar código
 git clone https://github.com/alexisdev623/csv_api.git
-cd csv_api
 
+cd csv_api
+```
 
 ## Uso
 Ejecutar la aplicación
 Para ejecutar la aplicación localmente, solo debes usar el siguiente comando:
-
+```
 docker-compose up --build -d
 
-
+```
 
 ### Configuración de la Base de datos
 Esto solo se debe hacer en la primera ejecución
-
+```
 docker exec -it web bash
 
 flask db init
 flask db migrate
 flask db upgrade
-
+```
 
 
 ## Test de la API
 
 Endpoints: 
+```
  * Running on http://127.0.0.1:5000
  * Running on http://172.18.0.2:5000
+```
 
 URL: /upload_csv
 Método: POST
@@ -58,10 +61,11 @@ file: Nombre del archivo CSV (debe contener departments, jobs o hired_employees)
 source: Fuente del archivo (local o s3).
 Ejemplo:
 
-bash
+```bash
 Copiar código
-curl -X POST "http://127.0.0.1:5000/upload_csv?file=departments&source=local"
 
+curl -X POST "http://127.0.0.1:5000/upload_csv?file=departments&source=local"
+```
 
 
 Generar Reporte 1
@@ -71,10 +75,11 @@ Descripción: Genera un reporte de contrataciones por trimestre para cada depart
 
 Ejemplo:
 
-bash
+```bash
 Copiar código
-curl -X POST "http://127.0.0.1:5000/generate_report1"
 
+curl -X POST "http://127.0.0.1:5000/generate_report1"
+```
 
 
 Generar Reporte 2
@@ -84,17 +89,18 @@ Descripción: Genera un reporte de departamentos que contrataron más empleados 
 
 Ejemplo:
 
-bash
+```bash
 Copiar código
-curl -X POST "http://127.0.0.1:5000/generate_report2"
 
+curl -X POST "http://127.0.0.1:5000/generate_report2"
+```
 
 
 
 
 
 ## Estructura del Proyecto
-
+```
 Copiar código
 ├── app/
 │   ├── __init__.py
@@ -108,7 +114,7 @@ Copiar código
 ├── config.py
 ├── requirements.txt
 └── README.md
-
+```
 
 app/__init__.py: Inicializa la aplicación Flask y la base de datos.
 app/models.py: Define los modelos de la base de datos (Department, Job, Employee).
