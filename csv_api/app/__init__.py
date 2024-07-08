@@ -2,17 +2,18 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+import os
 
 db = SQLAlchemy()
-
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 def create_app():
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = (
-        "postgresql://postgres:1234@localdb/employee"
+        DATABASE_URL
     )
     db.init_app(app)
-    migrate = Migrate(app, db)
+    Migrate(app, db)
     from . import routes
 
     app.register_blueprint(routes.bp)

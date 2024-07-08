@@ -7,6 +7,7 @@ from app.routes import bp
 from app.models import db, Department, Job, Employee
 import boto3
 from moto import mock_aws
+from datetime import date
 
 
 @pytest.fixture
@@ -19,11 +20,10 @@ def app():
     db.init_app(app)
     with app.app_context():
         db.create_all()
-        # Setup initial data for tests
-        db.session.add(Department())
-        db.session.add(Job())
-        db.session.add(Employee())
-        # db.session.commit()
+        db.session.add(Department(name="test"))
+        db.session.add(Job(title="test"))
+        db.session.add(Employee(name="test", hire_date=date(2023, 1, 1)))
+        db.session.commit()
 
     app.register_blueprint(bp)
 
@@ -66,6 +66,11 @@ def test_generate_report1(client):
 
 def test_generate_report2(client):
     response = client.post("/generate_report2")
+    assert response.status_code == 200
+
+
+def test_create_tables(client):
+    response = client.post("/create_tables")
     assert response.status_code == 200
 
 

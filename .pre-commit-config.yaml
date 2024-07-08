@@ -14,13 +14,14 @@ repos:
     # code formatter
     # linting tool config: pyproject.toml
 -   repo: https://github.com/ambv/black
-    rev: stable
+    rev: 24.4.2
     hooks:
     - id: black
-      language_version: python3.9
+      language_version: python3.10.12
     # linting tool config: .pylintrc
 -   repo: https://github.com/pre-commit/mirrors-pylint
-    rev: v2.3.1
+    rev: v3.0.0a5
     hooks:
     -   id: pylint
-        args: ["--ignore-patterns=test*", "--py3k"]
+        # args: ["--ignore-patterns=test*", "--py3k"]
+        args: ["--ignore-patterns=test*"]
