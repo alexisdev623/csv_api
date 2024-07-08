@@ -35,17 +35,15 @@ docker-compose up --build -d
 ### Configuración de la Base de datos
 Esto solo se debe hacer en la primera ejecución
 ```
-docker exec -it web bash
+Crear las tablas en la BD
 
-flask db init
-flask db migrate
-flask db upgrade
+curl -X POST "http://127.0.0.1:5000/create_tables"
 ```
 
 
 ## Test de la API
 
-Endpoints: 
+Endpoints:
 ```
  * Running on http://127.0.0.1:5000
  * Running on http://172.18.0.2:5000
