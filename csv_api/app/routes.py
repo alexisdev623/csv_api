@@ -9,35 +9,41 @@ from sqlalchemy import text
 bp = Blueprint("routes", __name__)
 
 
+
+
+
 @bp.route("/upload_csv", methods=["POST"])
 def upload_csv():
     print("request: ", request)
     file_value = request.args.get("file")
+    source = request.args.get("source")
     print("file value: ", file_value)
+    print("source: ", source)
+
+    if not file_value or not any(x in file_value for x in ["departments", "jobs", "employees"]):
+        return jsonify({"error": "El nombre del archivo no es válido. Debe contener 'departments', 'jobs' o 'employees'."}), 400
+
+    if source == "s3":
+        file_path = f"s3://csv-api-employee-db/csv_files/{file_value}.csv"
+    else:
+        file_path = f"csv_files/{file_value}.csv"
+
     if "departments" in file_value:
-        df = pd.read_csv(
-            f"csv_files/{file_value}.csv", delimiter=",", names=["id", "title"]
-        )
+        df = pd.read_csv(file_path, delimiter=",", names=["id", "title"])
         df.loc[len(df)] = [-1, "not known"]
         print("Loading rows: ", df.shape)
         for _, row in df.iterrows():
             department = Department(name=row["title"])
             db.session.add(department)
     elif "jobs" in file_value:
-        df = pd.read_csv(
-            f"csv_files/{file_value}.csv", delimiter=",", names=["id", "title"]
-        )
+        df = pd.read_csv(file_path, delimiter=",", names=["id", "title"])
         df.loc[len(df)] = [-1, "not known"]
         print("Loading rows: ", df.shape)
         for _, row in df.iterrows():
             job = Job(title=row["title"])
             db.session.add(job)
     elif "employees" in file_value:
-        df = pd.read_csv(
-            f"csv_files/{file_value}.csv",
-            delimiter=",",
-            names=["name", "hire_date", "department_id", "job_id"],
-        )
+        df = pd.read_csv(file_path, delimiter=",", names=["name", "hire_date", "department_id", "job_id"])
         try:
             deparment_query = Department.query.filter_by(name="not known").all()
             job_query = Job.query.filter_by(title="not known").all()
@@ -45,17 +51,13 @@ def upload_csv():
             nulls_job_id = job_query[0].id
         except IndexError:
             default_null_value = -1
-            print(
-                f"No hay registrados nulos en deparment_id y en job_id, se asume: {default_null_value}"
-            )
+            print(f"No hay registrados nulos en deparment_id y en job_id, se asume: {default_null_value}")
             nulls_deparment_id = default_null_value
             nulls_job_id = default_null_value
 
         df["job_id"] = df["job_id"].fillna(nulls_job_id).astype(int)
         df["department_id"] = df["department_id"].fillna(nulls_deparment_id).astype(int)
-        df["hire_date"] = pd.to_datetime(
-            df["hire_date"].fillna(pd.Timestamp("1970-01-01"))
-        )
+        df["hire_date"] = pd.to_datetime(df["hire_date"].fillna(pd.Timestamp("1970-01-01")))
         df["name"] = df["name"].astype(str)
         print("Loading rows: ", df.shape)
         for _, row in df.iterrows():
@@ -69,15 +71,11 @@ def upload_csv():
 
     try:
         db.session.commit()
-        return jsonify({"message": "File uploaded successfully"}), 200
+        return jsonify({"message": f"File {file_value} uploaded successfully"}), 200
     except IntegrityError as e:
         db.session.rollback()
-        return (
-            jsonify(
-                {"error": f"Duplicate key value violates unique constraint with {e}"}
-            ),
-            400,
-        )
+        return jsonify({"error": f"Duplicate key value violates unique constraint with {e}"}), 400
+
 
 
 @bp.route("/generate_report1", methods=["POST"])
@@ -181,74 +179,3 @@ def generate_report2():
         db.session.rollback()
         print("Error conecting to sqlite", e)
         return jsonify({"error": f"Database operation error: {str(e)}"}), 200
-
-
-@bp.route("/upload_csv_s3", methods=["POST"])
-def upload_csv_s3():
-    print("request: ", request)
-    file_value = request.args.get("file")
-    print("file value: ", file_value)
-    if "departments" in file_value:
-        df = pd.read_csv(
-            f"s3://csv-api-employee-db/csv_files/{file_value}.csv", delimiter=",", names=["id", "title"]
-        )
-        df.loc[len(df)] = [-1, "not known"]
-        print("Loading rows: ", df.shape)
-        for _, row in df.iterrows():
-            department = Department(name=row["title"])
-            db.session.add(department)
-    elif "jobs" in file_value:
-        df = pd.read_csv(
-            f"s3://csv-api-employee-db/csv_files/{file_value}.csv", delimiter=",", names=["id", "title"]
-        )
-        df.loc[len(df)] = [-1, "not known"]
-        print("Loading rows: ", df.shape)
-        for _, row in df.iterrows():
-            job = Job(title=row["title"])
-            db.session.add(job)
-    elif "employees" in file_value:
-        df = pd.read_csv(
-            f"s3://csv-api-employee-db/csv_files/{file_value}.csv",
-            delimiter=",",
-            names=["name", "hire_date", "department_id", "job_id"],
-        )
-        try:
-            deparment_query = Department.query.filter_by(name="not known").all()
-            job_query = Job.query.filter_by(title="not known").all()
-            nulls_deparment_id = deparment_query[0].id
-            nulls_job_id = job_query[0].id
-        except IndexError:
-            default_null_value = -1
-            print(
-                f"No hay registrados nulos en deparment_id y en job_id, se asume: {default_null_value}"
-            )
-            nulls_deparment_id = default_null_value
-            nulls_job_id = default_null_value
-
-        df["job_id"] = df["job_id"].fillna(nulls_job_id).astype(int)
-        df["department_id"] = df["department_id"].fillna(nulls_deparment_id).astype(int)
-        df["hire_date"] = pd.to_datetime(
-            df["hire_date"].fillna(pd.Timestamp("1970-01-01"))
-        )
-        df["name"] = df["name"].astype(str)
-        print("Loading rows: ", df.shape)
-        for _, row in df.iterrows():
-            employee = Employee(
-                name=row["name"],
-                job_id=row["job_id"],
-                department_id=row["department_id"],
-                hire_date=row["hire_date"],
-            )
-            db.session.add(employee)
-
-    try:
-        db.session.commit()
-        return jsonify({"message": "File uploaded successfully"}), 200
-    except IntegrityError as e:
-        db.session.rollback()
-        return (
-            jsonify(
-                {"error": f"Duplicate key value violates unique constraint with {e}"}
-            ),
-            400,
-        )
