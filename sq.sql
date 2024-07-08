@@ -20,3 +20,6 @@ drop table alembic_version CASCADE;
 
 ! hacer segundo punto
 !puedo desplegar esta imagen en
+
+
+1. que el archivo user data ejecute docker-compose -build y sale
