@@ -68,7 +68,7 @@ def run_integration_tests(source):
     return results_list
 
 
-@bp.route("/run_integration_tests", methods=["POST"])
+@bp.route("/run_integration_tests", methods=["GET"])
 def run_tests():
     source = request.args.get("source")
     if FLASK_ENV != "testing":
@@ -122,28 +122,6 @@ def upload_csv():
             delimiter=",",
             names=["name", "hire_date", "department_id", "job_id"],
         )
-        # try:
-        #     deparment_query = Department.query.filter_by(name="not known").all()
-        #     job_query = Job.query.filter_by(title="not known").all()
-        #     nulls_deparment_id = deparment_query[0].id
-        #     nulls_job_id = job_query[0].id
-        # except IndexError:
-        #     default_null_value = -1
-        #     logger.error(
-        #         f"No hay registrados nulos en deparment_id y en job_id, se asume: {default_null_value}"
-        #     )
-        #     nulls_deparment_id = default_null_value
-        #     nulls_job_id = default_null_value
-
-        # df["job_id"] = df["job_id"].fillna(nulls_job_id).astype(int)
-        # df["department_id"] = df["department_id"].fillna(nulls_deparment_id).astype(int)
-
-        # df['hire_date'] = pd.to_datetime(df['hire_date']).dt.strftime('%Y-%m-%d %H:%M:%S')
-        # df["hire_date"] = pd.to_datetime(
-        #     df["hire_date"].fillna(datetime(1970, 1, 1))
-        # )
-        # df['hire_date'] = pd.to_datetime(df['hire_date'])
-        # df["name"] = df["name"].astype(str)
         df = process_csv_employee(df)
         print("Loading rows: ", df.shape)
         for _, row in df.iterrows():
@@ -183,7 +161,7 @@ def upload_csv():
         return jsonify({"error": str(e)}), 500
 
 
-@bp.route("/generate_report1", methods=["POST"])
+@bp.route("/generate_report1", methods=["GET"])
 def generate_report1():
     logger.info("Generating report")
     sql_query = """
@@ -256,7 +234,7 @@ def generate_report1():
         return jsonify({"error": str(e)}), 500
 
 
-@bp.route("/generate_report2", methods=["POST"])
+@bp.route("/generate_report2", methods=["GET"])
 def generate_report2():
     print("Generating report")
     sql_query = """
@@ -321,3 +299,59 @@ def create_tables():
         return jsonify({"message": "Tables created successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+def null_report():
+    results_list = []
+    file_csv_name = ["departments", "jobs", "hired_employees"]
+    for csv_file in file_csv_name:
+        model = pluralize(csv_file)
+        logger.info(f"csv_file_name {csv_file}, model {model}")
+        with app.app_context():
+            query = db.session.query(model).statement
+            db_df = pd.read_sql(query, db.engine)
+            if model == Employee:
+                db_df["hire_date"] = pd.to_datetime(db_df["hire_date"])
+                db_df["name"] = db_df["name"].apply(
+                    lambda x: np.nan if pd.isna(x) or x.lower() == "nan" else x
+                )
+                db_df = db_df.replace(["", "null"], [np.nan, np.nan])
+                max_job_id = db_df["job_id"].max()
+                max_department_id = db_df["department_id"].max()
+                max_hire_date = db_df["hire_date"].min()
+                count_nulls_job_id = db_df["job_id"].value_counts().get(max_job_id, 0)
+                count_nulls_hire_date = (
+                    db_df["job_id"].value_counts().get(max_job_id, 0)
+                )
+                count_nulls_department_id = (
+                    db_df["department_id"].value_counts().get(max_department_id, 0)
+                )
+                nan_count_name = db_df["name"].isna().sum()
+                results_list.append(
+                    {
+                        "count_nulls_job_id": f"valor por defecto en la BD:{max_job_id}  conteo: {int(count_nulls_job_id)}",
+                        "count_nulls_department_id": f"valor por defecto en la BD: {max_department_id} conteo: {int(count_nulls_department_id)}",
+                        "nan_count_name": int(nan_count_name),
+                        "nan_hire_date": f"valor por defecto en BD {max_hire_date} conteo: {int(count_nulls_hire_date)}",
+                        "table": "Employees",
+                    }
+                )
+            elif model == Department:
+                db_df = db_df[db_df["name"] == "not known"]
+                json_result = db_df.to_json(orient="records")
+                results_list.append({"message": json_result, "table": "Department"})
+            else:
+                db_df = db_df[db_df["title"] == "not known"]
+                json_result = db_df.to_json(orient="records")
+                results_list.append({"message": json_result, "table": "Job"})
+
+    return results_list
+
+
+@bp.route("/run_null_report", methods=["GET"])
+def run_null_report():
+    if FLASK_ENV != "testing":
+        return jsonify({"error": "Endpoint only available in testing environment"}), 403
+    test_results = null_report()
+    print(test_results)
+    return jsonify(test_results), 200
