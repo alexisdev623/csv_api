@@ -17,4 +17,4 @@ class Employee(db.Model):
     name = db.Column(db.String(50), nullable=False)
     job_id = db.Column(db.Integer, db.ForeignKey("job.id"), nullable=True)
     department_id = db.Column(db.Integer, db.ForeignKey("department.id"), nullable=True)
-    hire_date = db.Column(db.Date, nullable=False)
+    hire_date = db.Column(db.DateTime, nullable=True)

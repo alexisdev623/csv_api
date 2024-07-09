@@ -5,7 +5,7 @@ from flask_migrate import Migrate
 import os
 
 db = SQLAlchemy()
-DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:1234@localhost/employees')
 
 def create_app():
     app = Flask(__name__)
