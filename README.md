@@ -48,6 +48,7 @@ Endpoints:
  * Running on http://172.18.0.2:5000
 ```
 
+### Cargar csvs
 URL: /upload_csv
 Método: POST
 Descripción: Este endpoint permite cargar datos desde un archivo CSV a la base de datos.
@@ -63,30 +64,77 @@ Ejemplo:
 curl -X POST "http://127.0.0.1:5000/upload_csv?file=departments&source=local"
 ```
 
-
-Generar Reporte 1
-URL: /generate_report1
+### crear las tablas
+URL: /create_tables
 Método: POST
+Descripción: Crea las tablas en la BD
+
+```bash
+
+curl -X POST "http://127.0.0.1:5000/create_tables"
+```
+
+### Recrear las tablas
+URL: /create_tables
+Método: POST
+Descripción: Borra y crea de nuevo las tablas en la BD
+
+```bash
+
+curl -X POST "http://127.0.0.1:5000/recreate_tables"
+```
+
+
+### Generar Reporte 1
+URL: /generate_report1
+Método: GET
 Descripción: Genera un reporte de contrataciones por trimestre para cada departamento y trabajo en el año 2021.
 
 Ejemplo:
 
 ```bash
 
-curl -X POST "http://127.0.0.1:5000/generate_report1"
+curl -X GET "http://127.0.0.1:5000/generate_report1"
 ```
 
 
-Generar Reporte 2
+### Generar Reporte 2
 URL: /generate_report2
-Método: POST
+Método: GET
 Descripción: Genera un reporte de departamentos que contrataron más empleados que el promedio en el año 2021.
 
 Ejemplo:
 
 ```bash
 
-curl -X POST "http://127.0.0.1:5000/generate_report2"
+curl -X GET "http://127.0.0.1:5000/generate_report2"
+```
+
+
+### Generar Reporte de nulls
+URL: /run_null_report
+Método: GET
+Descripción: Genera el reporte de nulos de las tablas
+
+Ejemplo:
+
+```bash
+
+curl -X GET "http://127.0.0.1:5000/run_null_report"
+```
+
+
+### Ejecutar pruebas de integración
+URL: /run_integration_tests
+Método: GET
+Descripción: Ejecuta las pruebas de integración que consiste en comparar los datos del csv con los datos que existen en la tabla de la BD.
+La comparación de las dataframes se hace mediante assert_frame_equal(db_df, csv_df), lo cual garantiza que la información es 100% igual.
+
+Ejemplo:
+
+```bash
+
+curl -X GET "http://127.0.0.1:5000/run_integration_tests"
 ```
 
 
