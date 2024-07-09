@@ -18,7 +18,6 @@ Tener docker y docker-compose instalados en el computador
 Clonar el repositorio:
 
 ```
-Copiar código
 git clone https://github.com/alexisdev623/csv_api.git
 
 cd csv_api
@@ -60,7 +59,6 @@ source: Fuente del archivo (local o s3).
 Ejemplo:
 
 ```bash
-Copiar código
 
 curl -X POST "http://127.0.0.1:5000/upload_csv?file=departments&source=local"
 ```
@@ -74,7 +72,6 @@ Descripción: Genera un reporte de contrataciones por trimestre para cada depart
 Ejemplo:
 
 ```bash
-Copiar código
 
 curl -X POST "http://127.0.0.1:5000/generate_report1"
 ```
@@ -88,7 +85,6 @@ Descripción: Genera un reporte de departamentos que contrataron más empleados 
 Ejemplo:
 
 ```bash
-Copiar código
 
 curl -X POST "http://127.0.0.1:5000/generate_report2"
 ```
@@ -99,7 +95,6 @@ curl -X POST "http://127.0.0.1:5000/generate_report2"
 
 ## Estructura del Proyecto
 ```
-Copiar código
 ├── app/
 │   ├── __init__.py
 │   ├── models.py
@@ -107,7 +102,7 @@ Copiar código
 ├── csv_files/
 │   ├── departments.csv
 │   ├── jobs.csv
-│   └── employees.csv
+│   └── hired_employees.csv
 ├── venv/
 ├── config.py
 ├── requirements.txt
@@ -115,16 +110,21 @@ Copiar código
 ```
 
 app/__init__.py: Inicializa la aplicación Flask y la base de datos.
+
 app/models.py: Define los modelos de la base de datos (Department, Job, Employee).
+
 app/routes.py: Define los endpoints de la API.
+
 csv_files/: Directorio que contiene los archivos CSV.
+
 config.py: Archivo de configuración para la aplicación.
+
 requirements.txt: Lista de dependencias del proyecto.
+
 README.md: Este archivo.
 
 
 
 ## Notas
-Asegúrate de que los archivos CSV estén correctamente formateados y que los nombres de los archivos contengan departments, jobs o hired_employees.
 Para los archivos de departments y jobs, se añade una fila adicional con un valor por defecto "not known" para manejar datos nulos.
 Para el archivo de employees, las columnas department_id y job_id se rellenan con valores nulos si es necesario, y la columna hire_date se establece en una fecha predeterminada si falta.

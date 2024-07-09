@@ -2,7 +2,7 @@
 from flask import Blueprint, request, jsonify, current_app as app
 from .models import db, Department, Job, Employee
 import pandas as pd
-import sqlalchemy.exc 
+import sqlalchemy.exc
 from sqlalchemy.exc import IntegrityError, OperationalError
 from pandas.testing import assert_frame_equal
 from sqlalchemy import text
@@ -16,20 +16,17 @@ import numpy as np
 bp = Blueprint("routes", __name__)
 
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-S3_BUCKET = os.getenv('S3_BUCKET', 'csv-api-employee-db')
-LOCAL_CSV_PATH = os.getenv('LOCAL_CSV_PATH', 'csv_files')
-FLASK_ENV = os.getenv('FLASK_ENV', 'testing')
-
-
+S3_BUCKET = os.getenv("S3_BUCKET", "csv-api-employee-db")
+LOCAL_CSV_PATH = os.getenv("LOCAL_CSV_PATH", "csv_files")
+FLASK_ENV = os.getenv("FLASK_ENV", "testing")
 
 
 def run_integration_tests(source):
-    results_list =[]
+    results_list = []
     file_csv_name = ["departments", "jobs", "hired_employees"]
     for csv_file in file_csv_name:
         model = pluralize(csv_file)
@@ -44,13 +41,17 @@ def run_integration_tests(source):
                 file_path = f"{LOCAL_CSV_PATH}/{csv_file}.csv"
             column_names = pluralize_columns(csv_file)
             csv_df = pd.read_csv(file_path, delimiter=",", names=column_names)
-            if model==Employee:
-                csv_df = csv_df.reset_index()            
+            if model == Employee:
+                csv_df = csv_df.reset_index()
                 csv_df = process_csv_employee(csv_df)
-                db_df['hire_date'] = pd.to_datetime(db_df['hire_date'])
-                db_df['name'] = db_df['name'].apply(lambda x: np.nan if pd.isna(x) or x.lower() == 'nan' else x) 
-                csv_df['name'] = csv_df['name'].apply(lambda x: np.nan if pd.isna(x) or x.lower() == 'nan' else x) 
-                db_df = db_df.replace(['', 'null'], [np.nan, np.nan])
+                db_df["hire_date"] = pd.to_datetime(db_df["hire_date"])
+                db_df["name"] = db_df["name"].apply(
+                    lambda x: np.nan if pd.isna(x) or x.lower() == "nan" else x
+                )
+                csv_df["name"] = csv_df["name"].apply(
+                    lambda x: np.nan if pd.isna(x) or x.lower() == "nan" else x
+                )
+                db_df = db_df.replace(["", "null"], [np.nan, np.nan])
             else:
                 csv_df.loc[len(csv_df)] = [len(csv_df) + 1, "not known"]
             try:
@@ -59,20 +60,21 @@ def run_integration_tests(source):
                 logger.info(message)
                 results_list.append({"message": message, "status": 200})
             except AssertionError as e:
-                message = f"Los DataFrames del modelo {model} son diferentes. Detalles: {e}"
+                message = (
+                    f"Los DataFrames del modelo {model} son diferentes. Detalles: {e}"
+                )
                 logger.info(message)
                 results_list.append({"message": message, "status": 400})
     return results_list
-                
-@bp.route('/run_integration_tests', methods=['POST'])
+
+
+@bp.route("/run_integration_tests", methods=["POST"])
 def run_tests():
     source = request.args.get("source")
-    if FLASK_ENV != 'testing':
-        return jsonify({'error': 'Endpoint only available in testing environment'}), 403
+    if FLASK_ENV != "testing":
+        return jsonify({"error": "Endpoint only available in testing environment"}), 403
     test_results = run_integration_tests(source)
     return jsonify(test_results), 200
-
-
 
 
 @bp.route("/upload_csv", methods=["POST"])
@@ -120,41 +122,26 @@ def upload_csv():
             delimiter=",",
             names=["name", "hire_date", "department_id", "job_id"],
         )
-        try:
-            deparment_query = Department.query.filter_by(name="not known").all()
-            job_query = Job.query.filter_by(title="not known").all()
-            nulls_deparment_id = deparment_query[0].id
-            nulls_job_id = job_query[0].id
-        except IndexError:
-            default_null_value = -1
-            logger.error(
-                f"No hay registrados nulos en deparment_id y en job_id, se asume: {default_null_value}"
-            )
-            nulls_deparment_id = default_null_value
-            nulls_job_id = default_null_value
-        except psycopg2.errors.UndefinedTable as e:
-            db.session.rollback()
-            return (
-                jsonify(
-                    {"error": f"You must create the tables in the database first {e}"}
-                ),
-                400,
-            )
-        except sqlalchemy.exc.ProgrammingError as e:
-            db.session.rollback()
-            return (
-                jsonify(
-                    {"error": f"You must create the tables in the database first {e}"}
-                ),
-                400,
-            )
+        # try:
+        #     deparment_query = Department.query.filter_by(name="not known").all()
+        #     job_query = Job.query.filter_by(title="not known").all()
+        #     nulls_deparment_id = deparment_query[0].id
+        #     nulls_job_id = job_query[0].id
+        # except IndexError:
+        #     default_null_value = -1
+        #     logger.error(
+        #         f"No hay registrados nulos en deparment_id y en job_id, se asume: {default_null_value}"
+        #     )
+        #     nulls_deparment_id = default_null_value
+        #     nulls_job_id = default_null_value
+
         # df["job_id"] = df["job_id"].fillna(nulls_job_id).astype(int)
         # df["department_id"] = df["department_id"].fillna(nulls_deparment_id).astype(int)
 
         # df['hire_date'] = pd.to_datetime(df['hire_date']).dt.strftime('%Y-%m-%d %H:%M:%S')
         # df["hire_date"] = pd.to_datetime(
         #     df["hire_date"].fillna(datetime(1970, 1, 1))
-        # )        
+        # )
         # df['hire_date'] = pd.to_datetime(df['hire_date'])
         # df["name"] = df["name"].astype(str)
         df = process_csv_employee(df)
@@ -175,22 +162,26 @@ def upload_csv():
     except IntegrityError as e:
         error_message = str(e)
         db.session.rollback()
-        return jsonify({
-            "error": f"There is information that has been inserted already, the unique key contraint in the table {file_value} doens't allow to insert the same key",
-            "detail": error_message
-        }), 400
-        
+        return (
+            jsonify(
+                {
+                    "error": f"There is information that has been inserted already, the unique key contraint in the table {file_value} doens't allow to insert the same key",
+                    "detail": error_message,
+                }
+            ),
+            400,
+        )
+
     except sqlalchemy.exc.ProgrammingError as e:
         db.session.rollback()
         return (
-            jsonify(
-                {"error": f"You must create the tables in the database first {e}"}
-            ),
+            jsonify({"error": f"You must create the tables in the database first {e}"}),
             400,
         )
     except Exception as e:
         logger.error(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @bp.route("/generate_report1", methods=["POST"])
 def generate_report1():
@@ -257,14 +248,13 @@ def generate_report1():
     except sqlalchemy.exc.ProgrammingError as e:
         db.session.rollback()
         return (
-            jsonify(
-                {"error": f"You must create the tables in the database first {e}"}
-            ),
+            jsonify({"error": f"You must create the tables in the database first {e}"}),
             400,
         )
     except Exception as e:
         logger.error(f"Error: {type(e)}")
         return jsonify({"error": str(e)}), 500
+
 
 @bp.route("/generate_report2", methods=["POST"])
 def generate_report2():
@@ -304,16 +294,15 @@ def generate_report2():
     except sqlalchemy.exc.ProgrammingError as e:
         db.session.rollback()
         return (
-            jsonify(
-                {"error": f"You must create the tables in the database first {e}"}
-            ),
+            jsonify({"error": f"You must create the tables in the database first {e}"}),
             400,
         )
     except Exception as e:
         logger.error(f"Error: {type(e)}")
         return jsonify({"error": str(e)}), 500
 
-@bp.route('/recreate_tables', methods=['DELETE'])
+
+@bp.route("/recreate_tables", methods=["DELETE"])
 def recreate_tables():
     try:
         logger.info("recreando las tablas de la BD")
@@ -323,7 +312,8 @@ def recreate_tables():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@bp.route('/create_tables', methods=['POST'])
+
+@bp.route("/create_tables", methods=["POST"])
 def create_tables():
     try:
         logger.info("creando las tablas de la BD")
