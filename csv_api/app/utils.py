@@ -4,6 +4,7 @@ import logging
 import psycopg2
 from flask import jsonify
 import sqlalchemy.exc
+import boto3
 from .models import db, Department, Job, Employee
 
 logging.basicConfig(level=logging.INFO)
@@ -73,3 +74,4 @@ def process_csv_employee(csv_df):
     csv_df["hire_date"] = pd.to_datetime(csv_df["hire_date"])
     csv_df["name"] = csv_df["name"].astype(str)
     return csv_df
+

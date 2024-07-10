@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 5000
 
 # Establecer el entorno de Flask
-ENV FLASK_APP=csv_api
+ENV FLASK_APP=run.py
 ENV FLASK_RUN_HOST=0.0.0.0
 
 # Comando para ejecutar la aplicación
