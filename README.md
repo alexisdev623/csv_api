@@ -173,6 +173,12 @@ README.md: Este archivo.
 
 
 
+# Diagrama del despliegue implementado en AWS
+
+![Alt text](images/arquitecture.drawio.png?raw=true "Title")
+
+Endpoint: https://bps5ktej24.execute-api.us-east-1.amazonaws.com/
+
 ## Notas
 Para los archivos de departments y jobs, se añade una fila adicional con un valor por defecto "not known" para manejar datos nulos.
 Para el archivo de employees, las columnas department_id y job_id se rellenan con valores nulos si es necesario, y la columna hire_date se establece en una fecha predeterminada si falta.
