@@ -175,9 +175,14 @@ README.md: Este archivo.
 
 # Diagrama del despliegue implementado en AWS
 
-![Alt text](images/arquitecture.drawio.png?raw=true "Title")
+![Alt text](images/arquitecture.png?raw=true "Title")
 
 Endpoint: https://bps5ktej24.execute-api.us-east-1.amazonaws.com/
+
+
+# Diagrama Recomendado para la api
+
+![Alt text](images/recommended_architecture.png?raw=true "Title")
 
 ## Notas
 Para los archivos de departments y jobs, se añade una fila adicional con un valor por defecto "not known" para manejar datos nulos.
