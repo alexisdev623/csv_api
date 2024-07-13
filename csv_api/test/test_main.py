@@ -60,12 +60,12 @@ def test_upload_csv_employees(client):
 
 
 def test_generate_report1(client):
-    response = client.post("/generate_report1")
+    response = client.get("/generate_report1")
     assert response.status_code == 200
 
 
 def test_generate_report2(client):
-    response = client.post("/generate_report2")
+    response = client.get("/generate_report2")
     assert response.status_code == 200
 
 
